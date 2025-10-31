@@ -8,7 +8,8 @@ Features:
  - Stores images in /images/
  - Displays the latest records and images via a Flask dashboard
 """
-
+import cv2
+import numpy as np
 from flask import Flask, jsonify, send_from_directory
 import threading
 import paho.mqtt.client as mqtt
@@ -17,6 +18,8 @@ import base64
 import os
 import time
 import threading
+
+from banana_detector import detect_banana_and_avg_color
 
 # -------------------------------
 # Configuration
@@ -81,7 +84,21 @@ def on_message(client, userdata, message):
             # Full Base64 image
             elif "base64image" in topic.lower():
                 img_data = base64.b64decode(payload)
+                nparr = np.frombuffer(img_data, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                vis, mean_rgb = detect_banana_and_avg_color(img)
+
                 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+
+                filename = f"processed_img_{timestamp}.png"
+                path = os.path.join(IMAGE_DIR, filename)
+                with open(path, "wb") as f:
+                    f.write(vis)
+                print(f"📸 Saved image: {path} ({len(vis)} bytes)")
+                current_entry["processed_image_path"] = filename
+
+                current_entry["rgb"] = mean_rgb
+
                 filename = f"img_{timestamp}.jpg"
                 path = os.path.join(IMAGE_DIR, filename)
                 with open(path, "wb") as f:
