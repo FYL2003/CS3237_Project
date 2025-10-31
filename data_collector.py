@@ -91,10 +91,7 @@ def on_message(client, userdata, message):
                 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 
                 filename = f"processed_img_{timestamp}.png"
-                path = os.path.join(IMAGE_DIR, filename)
-                with open(path, "wb") as f:
-                    f.write(vis)
-                print(f"📸 Saved image: {path} ({len(vis)} bytes)")
+                cv2.imwrite(filename, vis)
                 current_entry["processed_image_path"] = filename
 
                 current_entry["rgb"] = mean_rgb
