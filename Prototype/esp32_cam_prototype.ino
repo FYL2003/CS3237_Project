@@ -1,3 +1,20 @@
+/*
+ESP32-CAM Full Image Capture + Base64 MQTT Uploader
+--------------------------------------------------------------------
+Features:
+ - Initializes AI Thinker ESP32-CAM with configurable resolution and JPEG quality
+ - Sends Base64-encoded images at adjustable time intervals
+ - Connects to Wi-Fi and public HiveMQ MQTT broker
+ - Captures full JPEG images and converts them into Base64
+ - Publishes the Base64 image string to MQTT topic: fruiture/Base64image
+ - Includes automatic MQTT reconnection handling and status reporting
+
+Credits:
+ - ESP32 camera base code adapted from Du Yanzhang
+
+Author : Feng Yilong
+*/
+
 #include "esp_camera.h"
 #include "Arduino.h"
 #include "soc/soc.h"
@@ -8,35 +25,36 @@
 #include "ESP32MQTTClient.h"
 
 // ---------- Wi-Fi and MQTT ----------
-const char* ssid = "FYLiPhone";
-const char* password = "123456789";
-const char* mqttURI = "mqtt://test.mosquitto.org:1883";
-const char* publishTopic = "fruiture/Base64image";
+const char *ssid = "MyWifi-ssid";
+const char *password = "MyWifi-password";
+const char *mqttURI = "mqtt://broker.hivemq.com:1883";
+const char *publishTopic = "fruiture/Base64image";
 
 ESP32MQTTClient mqttClient;
 
 // ---------- Camera Pins (AI Thinker ESP32-CAM) ----------
-#define PWDN_GPIO_NUM     32
-#define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
+#define PWDN_GPIO_NUM 32
+#define RESET_GPIO_NUM -1
+#define XCLK_GPIO_NUM 0
+#define SIOD_GPIO_NUM 26
+#define SIOC_GPIO_NUM 27
+#define Y9_GPIO_NUM 35
+#define Y8_GPIO_NUM 34
+#define Y7_GPIO_NUM 39
+#define Y6_GPIO_NUM 36
+#define Y5_GPIO_NUM 21
+#define Y4_GPIO_NUM 19
+#define Y3_GPIO_NUM 18
+#define Y2_GPIO_NUM 5
+#define VSYNC_GPIO_NUM 25
+#define HREF_GPIO_NUM 23
+#define PCLK_GPIO_NUM 22
 
-#define PHOTO_INTERVAL 10000  // 10 seconds
+#define PHOTO_INTERVAL 10000 // 10 seconds
 unsigned long lastPhotoTime = 0;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   Serial.println("ESP32-CAM Base64 MQTT Sender (Full Image)");
 
@@ -70,16 +88,19 @@ void setup() {
   config.fb_count = 2;
 
   esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
+  if (err != ESP_OK)
+  {
     Serial.printf("Camera init failed with error 0x%x\n", err);
-    while (true);
+    while (true)
+      ;
   }
   Serial.println("Camera initialized.");
 
   // --- Wi-Fi Connection ---
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
     delay(500);
   }
@@ -93,24 +114,29 @@ void setup() {
   mqttClient.loopStart();
 
   Serial.print("Connecting to MQTT broker");
-  while (!mqttClient.isConnected()) {
+  while (!mqttClient.isConnected())
+  {
     Serial.print(".");
     delay(500);
   }
   Serial.println("\nMQTT connected!");
 }
 
-void loop() {
-  if (millis() - lastPhotoTime >= PHOTO_INTERVAL) {
+void loop()
+{
+  if (millis() - lastPhotoTime >= PHOTO_INTERVAL)
+  {
     takePhotoAndSend();
     lastPhotoTime = millis();
   }
 }
 
-void takePhotoAndSend() {
+void takePhotoAndSend()
+{
   Serial.println("Capturing photo...");
-  camera_fb_t * fb = esp_camera_fb_get();
-  if (!fb) {
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb)
+  {
     Serial.println("Camera capture failed!");
     return;
   }
@@ -120,23 +146,29 @@ void takePhotoAndSend() {
 
   Serial.printf("Photo size: %d bytes, Base64 length: %d\n", fb->len, encoded.length());
 
-  if (!mqttClient.isConnected()) {
+  if (!mqttClient.isConnected())
+  {
     Serial.println("MQTT not connected! Trying to reconnect...");
     mqttClient.loopStart();
-    if (!mqttClient.isConnected()) {
+    if (!mqttClient.isConnected())
+    {
       Serial.println("Failed to reconnect. Skipping send.");
       return;
     }
   }
 
-  if (mqttClient.publish(publishTopic, encoded.c_str(), 0, false)) {
+  if (mqttClient.publish(publishTopic, encoded.c_str(), 0, false))
+  {
     Serial.println("✅ Full Base64 image sent successfully!");
-  } else {
+  }
+  else
+  {
     Serial.println("❌ Failed to send full Base64 image!");
   }
 }
 
-void onMqttConnect(esp_mqtt_client_handle_t client) {
+void onMqttConnect(esp_mqtt_client_handle_t client)
+{
   // Optional: subscribe if needed
 }
 

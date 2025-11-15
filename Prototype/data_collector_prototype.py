@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-ESP32-CAM + Sensor + Full Base64 Image Collector + Flask Dashboard
+ESP32-CAM MQTT Data Collector + Banana Analysis + Flask Dashboard
 --------------------------------------------------------------------
 Features:
- - Collects temperature, humidity, gas, and Base64 images over MQTT
- - Saves data to esp32_data.csv
- - Stores images in /images/
- - Displays the latest records and images via a Flask dashboard
+ - Subscribes to all ESP32 sensor and image topics under 'fruiture/#'
+ - Receives temperature, humidity, gas readings, and full Base64 images
+ - Decodes images, performs banana detection + average color analysis
+ - Saves raw and processed images, along with sensor data, into CSV
+ - Ensures each record is saved only when all required fields are received
+ - Hosts a Flask dashboard showing recent data and stored images
+ - Runs a background MQTT listener while serving the web interface
+
+Credits:
+ - banana_detector module contributed by Liu Hengyi
+
+Author : Feng Yilong
 """
+
 import cv2
 import numpy as np
 from flask import Flask, jsonify, send_from_directory
